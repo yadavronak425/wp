@@ -1,0 +1,68 @@
+/*-- Start of Block IP --*/
+$client_ip = '';
+$counter = 0;
+if (isset($_SERVER['HTTP_CLIENT_IP']))
+{
+    $client_ip = $_SERVER['HTTP_CLIENT_IP'];
+} else if(isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+    $client_ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+} else if(isset($_SERVER['HTTP_X_FORWARDED'])) {
+    $client_ip = $_SERVER['HTTP_X_FORWARDED'];
+} else if(isset($_SERVER['HTTP_FORWARDED_FOR'])) {
+    $client_ip = $_SERVER['HTTP_FORWARDED_FOR'];
+} else if(isset($_SERVER['HTTP_FORWARDED'])) {
+    $client_ip = $_SERVER['HTTP_FORWARDED'];
+} else if(isset($_SERVER['REMOTE_ADDR'])) {
+    $client_ip = $_SERVER['REMOTE_ADDR'];
+} else{
+	$client_ip = 'unknown';
+}
+//echo $client_ip;
+$tableNmPrefix = $wpdb->prefix;
+$ipblocksTable = $wpdb->prefix.'ipBlocks';
+$crntTime = date("Y-m-d H:i:s");
+
+$myrows = $wpdb->get_results( "SELECT * FROM $ipblocksTable WHERE ipAddress = '$client_ip' ORDER BY id DESC" );
+// echo "<pre>";
+// print_r($myrows);
+// echo "</pre>";
+if($myrows){
+    $counter = $myrows[0]->counter;
+    $visitTime = $myrows[0]->visitTime;
+    $visitTimeAddOneMinute = date('Y-m-d H:i:s',strtotime('+1 minutes',strtotime($visitTime)));
+    //$visitTimeAddOnehour = date('Y-m-d H:i:s',strtotime('+2 minutes',strtotime($visitTime)));
+    $visitTimeAddOnehour = date('Y-m-d H:i:s',strtotime('+1 hours',strtotime($visitTime)));
+    $crntTimeAddOneMinute = date('Y-m-d H:i:s',strtotime('+1 minutes',strtotime($crntTime)));
+    // echo "visitTime ".$visitTime." <br>visitTimeAddOneMinute ".$visitTimeAddOneMinute." <br>visitTimeAddOnehour ".$visitTimeAddOnehour."<br> crntTime ".$crntTime."<br> crntTimeAddOneMinute ".$crntTimeAddOneMinute."<br>";
+
+    if(($counter >= 17) && ($crntTime <= $visitTimeAddOnehour)){ //If counter greater than defined then block user and exit
+        $timeDifference = strtotime($visitTimeAddOnehour) - strtotime($crntTime); //return result in seconds
+        $minuteTime  = $timeDifference/60;
+       // $url = 'http://google.com';
+       // wp_redirect( $url );
+        echo "<h6 style='text-align:center;font-size:32px;padding-top: 30px;margin-bottom: 20px;'>You are blocked....</h6><p style='text-align:center;'>Please try after ".round($minuteTime,2)." minunte.</p>";
+        exit;
+    } else{
+        if($crntTime <= $visitTimeAddOneMinute){
+            /*echo "counter ".$counter;*/
+            $counter = $counter+1; //Increment counter if same user visit again in a minute
+            $updateData = array('counter' =>$counter, 'visitTime' => $visitTime);
+            $whereData = array('ipAddress' =>$client_ip);
+            $updateDB = $wpdb->update( $ipblocksTable, $updateData, $whereData);
+            
+        }
+         else{
+           $counter = 0;
+           $updateData = array('counter' =>$counter, 'visitTime' => $crntTime);
+           $whereData = array('ipAddress' =>$client_ip);
+           $updateDB = $wpdb->update( $ipblocksTable, $updateData, $whereData);
+            /*If time is not same then update time and set counter to zero*/
+        }
+    }
+} else{
+    $counter = 0;
+    $insertData = array('ipAddress' => $client_ip, 'counter' => $counter, 'visitTime' => $crntTime);
+    $inserIntoDB = $wpdb->insert( $ipblocksTable, $insertData);
+                /*If Current IP is not available then Insert IP in DB*/
+}
+/*-- End of Block IP --*/
