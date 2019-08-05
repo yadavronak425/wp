@@ -1,0 +1,191 @@
+<?php 
+    /*
+    Plugin Name: IP Blocker
+    Plugin URI: 
+    Description: Plugin for IP Block When try to open site many times in a minute
+    Author: AIS Team
+    Version: 1.0
+    Author URI: 
+    */
+    function ipBlock_admin_actions() {
+        add_options_page("Blocked IP List", "Blocked IP List", "manage_options", "blocked-ip-list", "my_plugin_options");
+    }
+    function my_plugin_options() {
+        if ( !current_user_can( 'manage_options' ) )  {
+            wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
+        }
+        /*-- Start of Block IP --*/
+        wp_register_style( 'bootstrap-css', 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.css' );
+        wp_enqueue_style('bootstrap-css');
+       // wp_register_style( 'bootstrap-min-css', 'https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css' );
+        //wp_enqueue_style('bootstrap-min-css');
+        
+        //Scripts
+        wp_register_script( 'jquery-main', 'https://code.jquery.com/jquery-3.3.1.js' );
+        wp_enqueue_script('jquery-main');
+        wp_register_script( 'dataTablesJS.min', 'https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js' );
+        wp_enqueue_script('dataTablesJS.min');
+        wp_register_script( 'bootstrap4JS', 'https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js' );
+        wp_enqueue_script('bootstrap4JS');
+
+global $wpdb;
+$tableNmPrefix = $wpdb->prefix;
+$ipblocksTable = $wpdb->prefix.'ipBlocks';
+ $myrows = $wpdb->get_results( "SELECT * FROM $ipblocksTable ORDER BY id DESC" );
+//  echo "<pre>";
+//  print_r($myrows);
+//  echo "</pre>";
+//  echo $_POST
+ ?>
+ <form name="form1" method="post" action="<?php echo $_SERVER['REQUEST_URI']; ?>">
+<input type="hidden" name="<?php echo $hidden_field_name; ?>" value="Y">
+    <h6 class="pt-4 pb-5 text-center h2">List of Blocked IP Address</h6>
+<div class="table-responsive">
+    <table id="example" class="table table-striped table-bordered nowrap" style="width:95%">
+            <thead>
+                <tr>
+                    <th style="max-width:60px;">No.</th>
+                    <th style="max-width:110px;">IP Address</th>
+                    <th style="max-width:125px;">Visit Time</th>
+                    <th style="max-width:110px;">Permanent Block</th>
+                </tr>
+            </thead>
+            <tbody> 
+            <?php
+            if($myrows){
+                $i = 1;
+                foreach($myrows as $myrow){?>
+                <tr>
+                    <td><?php echo $i; ?>.</td>
+                    <td><?php echo $myrow->ipAddress; ?></td>
+                    <td><?php echo $myrow->visitTime; ?></td>
+                    <td><input type="checkbox" name="checkValue" value="<?php echo $myrow->id; ?>"></td>
+                </tr>
+                <?php    
+                    $i++;
+                }
+            } 
+ ?>
+            </tbody>
+    </table>
+</div>
+<script>
+jQuery(document).ready(function() {
+    jQuery('#example').DataTable({
+        responsive: true
+    });
+} );
+</script>
+
+
+
+<p><?php _e("Favorite Color:", 'menu-test' ); ?> 
+<input type="text" name="<?php echo $data_field_name; ?>" value="<?php echo $opt_val; ?>" size="20">
+</p><hr />
+
+<p class="submit">
+<input type="submit" name="Submit" class="button-primary" value="<?php esc_attr_e('Save Changes') ?>" />
+</p>
+
+</form>
+<?php
+// $client_ip = '';
+// $counter = 0;
+// if (isset($_SERVER['HTTP_CLIENT_IP']))
+// {
+//     $client_ip = $_SERVER['HTTP_CLIENT_IP'];
+// } else if(isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+//     $client_ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+// } else if(isset($_SERVER['HTTP_X_FORWARDED'])) {
+//     $client_ip = $_SERVER['HTTP_X_FORWARDED'];
+// } else if(isset($_SERVER['HTTP_FORWARDED_FOR'])) {
+//     $client_ip = $_SERVER['HTTP_FORWARDED_FOR'];
+// } else if(isset($_SERVER['HTTP_FORWARDED'])) {
+//     $client_ip = $_SERVER['HTTP_FORWARDED'];
+// } else if(isset($_SERVER['REMOTE_ADDR'])) {
+//     $client_ip = $_SERVER['REMOTE_ADDR'];
+// } else{
+// 	$client_ip = 'unknown';
+// }
+// //echo $client_ip;
+// $tableNmPrefix = $wpdb->prefix;
+// $ipblocksTable = $wpdb->prefix.'ipBlocker';
+// $crntTime = date("Y-m-d H:i:s");
+// global $wpdb;
+// $myrows = $wpdb->get_results( "SELECT * FROM $ipblocksTable WHERE ipAddress = '$client_ip' ORDER BY id DESC" );
+// // echo "<pre>";
+// // print_r($myrows);
+// // echo "</pre>";
+// if($myrows){
+//     $counter = $myrows[0]->counter;
+//     $visitTime = $myrows[0]->visitTime;
+//     $visitTimeAddOneMinute = date('Y-m-d H:i:s',strtotime('+1 minutes',strtotime($visitTime)));
+//     //$visitTimeAddOnehour = date('Y-m-d H:i:s',strtotime('+2 minutes',strtotime($visitTime)));
+//     $visitTimeAddOnehour = date('Y-m-d H:i:s',strtotime('+1 hours',strtotime($visitTime)));
+//     $crntTimeAddOneMinute = date('Y-m-d H:i:s',strtotime('+1 minutes',strtotime($crntTime)));
+//     // echo "visitTime ".$visitTime." <br>visitTimeAddOneMinute ".$visitTimeAddOneMinute." <br>visitTimeAddOnehour ".$visitTimeAddOnehour."<br> crntTime ".$crntTime."<br> crntTimeAddOneMinute ".$crntTimeAddOneMinute."<br>";
+
+//     if(($counter >= 17) && ($crntTime <= $visitTimeAddOnehour)){ //If counter greater than defined then block user and exit
+//         $timeDifference = strtotime($visitTimeAddOnehour) - strtotime($crntTime); //return result in seconds
+//         $minuteTime  = $timeDifference/60;
+//        // $url = 'http://google.com';
+//        // wp_redirect( $url );
+//         echo "<h6 style='text-align:center;font-size:32px;padding-top: 30px;margin-bottom: 20px;'>You are blocked....</h6><p style='text-align:center;'>Please try after ".round($minuteTime,2)." minunte.</p>";
+//         exit;
+//     } else{
+//         if($crntTime <= $visitTimeAddOneMinute){
+//             /*echo "counter ".$counter;*/
+//             $counter = $counter+1; //Increment counter if same user visit again in a minute
+//             $updateData = array('counter' =>$counter, 'visitTime' => $visitTime);
+//             $whereData = array('ipAddress' =>$client_ip);
+//             $updateDB = $wpdb->update( $ipblocksTable, $updateData, $whereData);
+            
+//         }
+//          else{
+//            $counter = 0;
+//            $updateData = array('counter' =>$counter, 'visitTime' => $crntTime);
+//            $whereData = array('ipAddress' =>$client_ip);
+//            $updateDB = $wpdb->update( $ipblocksTable, $updateData, $whereData);
+//             /*If time is not same then update time and set counter to zero*/
+//         }
+//     }
+// } else{ echo "client_ip ".$client_ip." counter ".$counter." crntTime ".$crntTime;
+//     $counter = 0;
+//     $insertData = array('ipAddress' => $client_ip, 'counter' => $counter, 'visitTime' => $crntTime);
+//     $inserIntoDB = $wpdb->insert( $ipblocksTable, $insertData);
+//                 /*If Current IP is not available then Insert IP in DB*/
+//                 echo "---".$inserIntoDB;
+// }
+/*-- End of Block IP --*/
+
+    } 
+
+    add_action('admin_menu', 'ipBlock_admin_actions');
+/*-- Start of Create Table, When Plugins activated --*/
+    function jal_install() {
+	global $wpdb;
+	//global $jal_db_version;
+
+	$table_name = $wpdb->prefix . 'ipBlocker';
+	
+	$charset_collate = $wpdb->get_charset_collate();
+
+	$sql = "CREATE TABLE $table_name (
+		id mediumint(9) NOT NULL AUTO_INCREMENT,
+        ipAddress varchar(20) NOT NULL,
+        counter mediumint(9) NOT NULL,
+        visitTime TIMESTAMP NULL,
+		PRIMARY KEY (id)
+    ) $charset_collate;";
+
+	require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+	dbDelta( $sql );
+
+	//add_option( 'jal_db_version', $jal_db_version );
+}
+register_activation_hook( __FILE__, 'jal_install' );
+/*-- End of Create Table, When Plugins activated --*/
+
+
+
+?>
